@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+# vim:set nolist et tw=0 ts=2 sw=2 sts=2:
+# Simple program that sorts git repos based on the site they come from.
+
+import os
+import re
+import subprocess
+import sys
+
+# Map from protocol (eg, 'git', or 'sso') to map of given hostname to desired
+# hostname. For example:
+#  _HOST_REWRITE = {
+#    'git': {
+#      'github': 'github.com',
+#    },
+#  }
+_HOST_REWRITE = {
+}
+
+def _decode_url(url):
+  '''Determine the key parts of a git clone url.
+
+  >>> pprint(_decode_url('https://github.com/tsukasa-au/micropython.git'))
+  {'compound_project': 'tsukasa-au/micropython', 'domain': 'github.com', 'project': 'micropython', 'user': 'tsukasa-au'}
+  >>> pprint(_decode_url('git@github.com:tsukasa-au/micropython.git'))
+  {'compound_project': 'tsukasa-au/micropython', 'domain': 'github.com', 'project': 'micropython', 'user': 'tsukasa-au'}
+  >>> pprint(_decode_url('https://gist.github.com/50b6cca61dd1c3f88f41.git'))
+  {'compound_project': '50b6cca61dd1c3f88f41', 'domain': 'gist.github.com', 'project': '50b6cca61dd1c3f88f41', 'user': None}
+  >>> pprint(_decode_url('git@gist.github.com:50b6cca61dd1c3f88f41.git'))
+  {'compound_project': '50b6cca61dd1c3f88f41', 'domain': 'gist.github.com', 'project': '50b6cca61dd1c3f88f41', 'user': None}
+  >>> pprint(_decode_url('https://git.code.sf.net/p/mcomix/git'))
+  {'compound_project': 'mcomix', 'domain': 'sf.net', 'project': 'mcomix', 'user': None}
+  >>> pprint(_decode_url('git://git@github.com:nickyringland/ncss.life.git'))
+  {'compound_project': 'nickyringland/ncss.life', 'domain': 'github.com', 'project': 'ncss.life', 'user': 'nickyringland'}
+  >>> pprint(_decode_url('git://git.code.sf.net/p/mcomix/git'))
+  {'compound_project': 'mcomix', 'domain': 'sf.net', 'project': 'mcomix', 'user': None}
+  >>> pprint(_decode_url('http://repo.or.cz/fast-export.git'))
+  {'compound_project': 'fast-export', 'domain': 'repo.or.cz', 'project': 'fast-export', 'user': None}
+  >>> pprint(_decode_url('git://git.videolan.org/libdvdnav.git'))
+  {'compound_project': 'libdvdnav', 'domain': 'videolan.org', 'project': 'libdvdnav', 'user': None}
+  >>> pprint(_decode_url('https://code.videolan.org/videolan/libdvdread.git'))
+  {'compound_project': 'videolan/libdvdread', 'domain': 'videolan.org', 'project': 'libdvdread', 'user': 'videolan'}
+  >>> pprint(_decode_url('http://localhost/abc.git'))
+  Traceback (most recent call last):
+    ...
+  KeyError: 'Unknown host'
+  >>> 
+
+  '''
+  RES = [
+      # Sourceforge
+      r'(?P<scheme>https?|git)://(?:git\.)?(?:code\.)?(?P<domain>sf\.net)/p/(?P<project>[^/]+)/git',
+
+      # Gist
+      r'(?P<scheme>https?)://(?P<domain>gist\.github\.com)/(?P<project>[^.]+).git',
+
+      # Generic case.
+      r'(?P<scheme>https?)://(?P<domain>[^./]+\.[^/]+)/(?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>[a-zA-Z1-9_.-]+)\.git',
+      r'(?P<scheme>git://)?(?:[a-zA-Z0-9_-]+@)?(?P<domain>[^.:]+\.[^:]+)[:/](?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>[a-zA-Z0-9_.-]+)\.git'
+  ]
+  DOMAIN_PREFIXES_TO_STRIP = {'git', 'code'}
+  for regexp in RES:
+    m = re.match(regexp, url)
+    if not m:
+      continue
+    d = m.groupdict()
+
+    # Cleanup the domain
+    # NOTE: We strip off the subdomains 'git' and 'code', though ensure there
+    # is at least some part of the domain name left (there must be at least 1
+    # dot).
+    domain_parts = d['domain'].split('.')
+    domain_parts.reverse()
+    while len(domain_parts) > 2 and domain_parts[-1] in DOMAIN_PREFIXES_TO_STRIP:
+        domain_parts.pop()
+    d['domain'] = '.'.join(reversed(domain_parts))
+
+    # Rewrite the short hostname to the full hostname for our directory structure.
+    if d['scheme'] in _HOST_REWRITE:
+      _rewrite_rules = _HOST_REWRITE[d['scheme']]
+      if d['domain'] in _rewrite_rules:
+        d['domain'] = _rewrite_rules[d['domain']]
+
+    return {
+        'domain': d['domain'],
+        'user': d.get('user'),
+        'project': d['project'],
+        'compound_project': '{}/{}'.format(d['user'], d['project']) if d.get('user') else d['project'],
+    }
+  raise KeyError('Unknown host')
+
+
+def _ensure_dir_exists(dirname):
+  if not os.path.exists(dirname):
+    parts = dirname.split('/')
+    for i in range(len(parts)):
+      partial_dirname = '/'.join(parts[:i])
+      if not os.path.exists(dirname):
+        os.mkdir(dirname)
+
+
+def main():
+  if len(sys.argv) != 2:
+    print('Must provide exactly 1 argument, the git repo to clone', file=sys.stderr)
+    sys.exit(1)
+
+  clone_url, = sys.argv[1:]
+  url_parts = _decode_url(clone_url)
+
+  base_dir = os.path.join(
+      os.environ['HOME'], 'Projects', 'src')
+  _ensure_dir_exists(base_dir)
+  src_base_dir = os.path.join(base_dir, url_parts['domain'])
+  _ensure_dir_exists(src_base_dir)
+
+  # Git will make sure that the final directory exists (in case
+  # compound_project has a '/' in it).
+  cmd = [
+      'git', 'clone', '--',
+      clone_url,
+      url_parts['compound_project'],
+  ]
+  p = subprocess.Popen(cmd, cwd=src_base_dir)
+  stdout, stderr = p.communicate()
+  sys.exit(p.wait())
+
+
+if __name__ == "__main__":
+  import doctest
+  def pprint(d):
+    if not isinstance(d, dict):
+      return d
+    print('{{{}}}'.format(
+        ', '.join('{!r}: {!r}'.format(k, v) for k, v in sorted(d.items()))))
+  doctest.testmod()
+
+  main()
