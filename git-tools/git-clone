@@ -91,12 +91,18 @@ def _decode_url(url):
 
 
 def _ensure_dir_exists(dirname):
-  if not os.path.exists(dirname):
+  def _walk_path(dirname):
     parts = dirname.split('/')
-    for i in range(len(parts)):
-      partial_dirname = '/'.join(parts[:i])
-      if not os.path.exists(dirname):
-        os.mkdir(dirname)
+    parts.reverse()
+    output_parts = [parts.pop()]
+    while parts:
+      output_parts.append(parts.pop())
+      yield '/'.join(output_parts)
+
+  if not os.path.exists(dirname):
+    for partial_dirname in _walk_path(dirname):
+      if not os.path.exists(partial_dirname):
+        os.mkdir(partial_dirname)
 
 
 def main():
