@@ -7,3 +7,4 @@ function ln_bin {
 }
 
 ln_bin "$(dirname "$0")/git-tools/git-clone" "gc"
+ln_bin "$(dirname "$0")/shell-scripts/temp-extract-archive.py" "t_extract"
