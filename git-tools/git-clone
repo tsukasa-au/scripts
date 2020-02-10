@@ -44,6 +44,8 @@ def _decode_url(url):
   {'compound_project': 'videolan/libdvdread', 'domain': 'videolan.org', 'project': 'libdvdread', 'user': 'videolan'}
   >>> pprint(_decode_url('https://gitlab.freedesktop.org/xorg/app/xrandr.git'))
   {'compound_project': 'xorg/app/xrandr', 'domain': 'gitlab.freedesktop.org', 'project': 'app/xrandr', 'user': 'xorg'}
+  >>> pprint(_decode_url('https://chromium.googlesource.com/apps/libapps'))
+  {'compound_project': 'chromium/apps/libapps', 'domain': 'googlesource.com', 'project': 'apps/libapps', 'user': 'chromium'}
   >>> pprint(_decode_url('http://localhost/abc.git'))
   Traceback (most recent call last):
     ...
@@ -54,6 +56,9 @@ def _decode_url(url):
   RES = [
       # Sourceforge
       r'(?P<scheme>https?|git)://(?:git\.)?(?:code\.)?(?P<domain>sf\.net)/p/(?P<project>[^/]+)/git',
+
+      # Google Source
+      r'(?P<scheme>https?)://(?P<user>[^.]+)[.](?P<domain>googlesource\.com)/(?P<project>.+)',
 
       # Gist
       r'(?P<scheme>https?)://(?P<domain>gist\.github\.com)/(?P<project>[^.]+).git',
