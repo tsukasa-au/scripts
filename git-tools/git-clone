@@ -22,6 +22,8 @@ def _decode_url(url):
 
   >>> pprint(_decode_url('https://github.com/tsukasa-au/micropython.git'))
   {'compound_project': 'tsukasa-au/micropython', 'domain': 'github.com', 'project': 'micropython', 'user': 'tsukasa-au'}
+  >>> pprint(_decode_url('https://github.com/makarandtapaswi/BallClustering_ICCV2019.git'))
+  {'compound_project': 'makarandtapaswi/BallClustering_ICCV2019', 'domain': 'github.com', 'project': 'BallClustering_ICCV2019', 'user': 'makarandtapaswi'}
   >>> pprint(_decode_url('git@github.com:tsukasa-au/micropython.git'))
   {'compound_project': 'tsukasa-au/micropython', 'domain': 'github.com', 'project': 'micropython', 'user': 'tsukasa-au'}
   >>> pprint(_decode_url('https://gist.github.com/50b6cca61dd1c3f88f41.git'))
@@ -55,7 +57,7 @@ def _decode_url(url):
       r'(?P<scheme>https?)://(?P<domain>gist\.github\.com)/(?P<project>[^.]+).git',
 
       # Generic case.
-      r'(?P<scheme>https?)://(?P<domain>[^./]+\.[^/]+)/(?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>[a-zA-Z1-9_.-]+)\.git',
+      r'(?P<scheme>https?)://(?P<domain>[^./]+\.[^/]+)/(?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>[a-zA-Z0-9_.-]+)\.git',
       r'(?P<scheme>git://)?(?:[a-zA-Z0-9_-]+@)?(?P<domain>[^.:]+\.[^:]+)[:/](?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>[a-zA-Z0-9_.-]+)\.git'
   ]
   DOMAIN_PREFIXES_TO_STRIP = {'git', 'code'}
