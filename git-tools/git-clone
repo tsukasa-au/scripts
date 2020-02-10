@@ -42,6 +42,8 @@ def _decode_url(url):
   {'compound_project': 'libdvdnav', 'domain': 'videolan.org', 'project': 'libdvdnav', 'user': None}
   >>> pprint(_decode_url('https://code.videolan.org/videolan/libdvdread.git'))
   {'compound_project': 'videolan/libdvdread', 'domain': 'videolan.org', 'project': 'libdvdread', 'user': 'videolan'}
+  >>> pprint(_decode_url('https://gitlab.freedesktop.org/xorg/app/xrandr.git'))
+  {'compound_project': 'xorg/app/xrandr', 'domain': 'gitlab.freedesktop.org', 'project': 'app/xrandr', 'user': 'xorg'}
   >>> pprint(_decode_url('http://localhost/abc.git'))
   Traceback (most recent call last):
     ...
@@ -57,7 +59,7 @@ def _decode_url(url):
       r'(?P<scheme>https?)://(?P<domain>gist\.github\.com)/(?P<project>[^.]+).git',
 
       # Generic case.
-      r'(?P<scheme>https?)://(?P<domain>[^./]+\.[^/]+)/(?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>[a-zA-Z0-9_.-]+)\.git',
+      r'(?P<scheme>https?)://(?P<domain>[^./]+\.[^/]+)/(?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>(?:[a-zA-Z0-9_-]+/)?[a-zA-Z0-9_.-]+)\.git',
       r'(?P<scheme>git://)?(?:[a-zA-Z0-9_-]+@)?(?P<domain>[^.:]+\.[^:]+)[:/](?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>[a-zA-Z0-9_.-]+)\.git'
   ]
   DOMAIN_PREFIXES_TO_STRIP = {'git', 'code'}
