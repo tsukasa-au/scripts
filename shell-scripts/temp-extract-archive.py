@@ -1,5 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # vim:set nolist ts=2 sw=2 sts=2 et tw=0:
+
+from __future__ import print_function
 
 import collections
 import gflags
@@ -45,18 +47,18 @@ class Extractor(object):
 
   def create_extractors_mapping(self):
     ret = {}
-    for ext in ('.cbr', '.rar', '.rar_'):
+    for ext in {'.cbr', '.rar', '.rar_'}:
       ret[ext] = self._extract_rar
-    for ext in ('.cbz', '.egg', '.jar', '.par', '.zip', '.apk'):
+    for ext in {'.cbz', '.egg', '.jar', '.par', '.zip', '.apk'}:
       if FLAGS.use_7z_for_zip:
         ret[ext] = self._extract_7z
       else:
         ret[ext] = self._extract_zip
-    for ext in ('.7z', '.img', '.iso'):
+    for ext in {'.7z', '.img', '.iso'}:
       ret[ext] = self._extract_7z
-    for ext in ('.bz2', '.gz2', '.tgz', '.tbz', '.tar', '.gz', '.xz'):
+    for ext in {'.bz2', '.gz2', '.tgz', '.tbz', '.tar', '.gz', '.xz'}:
       ret[ext] = self._extract_tar
-    for ext in ('.deb', ):
+    for ext in {'.deb', }:
       ret[ext] = self._extract_ar
     return ret
 
@@ -97,7 +99,7 @@ class Extractor(object):
     env = dict(os.environ)
     if self.locale_override:
       env['LC_ALL'] = self.locale_override
-    with open('/dev/null', 'rw') as dev_null:
+    with open('/dev/null', 'r+') as dev_null:
       extractor = subprocess.Popen(
           cmd,
           env=env,
@@ -199,7 +201,7 @@ def _merge_directories_ignore_case(base_dir):
   for dir_ in dirs:
     dir_map[dir_.lower()].add(dir_)
 
-  for k, dirs in dir_map.iteritems():
+  for k, dirs in dir_map.items():
     if len(dirs) <= 1:
       continue
 
@@ -215,7 +217,7 @@ def _merge_directories_ignore_case(base_dir):
       )
     dir_map[k] = {local_dir}
 
-  for dir_ in itertools.chain.from_iterable(dir_map.itervalues()):
+  for dir_ in itertools.chain.from_iterable(dir_map.values()):
     _merge_directories_ignore_case(
         os.path.join(base_dir, dir_))
 
@@ -294,8 +296,8 @@ def _get_tmpdir():
 def _real_main():
   try:
     argv = FLAGS(sys.argv)
-  except gflags.FlagsError, e:
-    print '%s\nUsage: %s ARGS\n%s' % (e, sys.argv[0], FLAGS)
+  except gflags.FlagsError as e:
+    print('%s\nUsage: %s ARGS\n%s' % (e, sys.argv[0], FLAGS))
     sys.exit(1)
 
   tempdir = tempfile.mkdtemp(dir=FLAGS.tmp_dir_override)
