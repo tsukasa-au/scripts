@@ -46,6 +46,10 @@ def _decode_url(url):
   {'compound_project': 'xorg/app/xrandr', 'domain': 'gitlab.freedesktop.org', 'project': 'app/xrandr', 'user': 'xorg'}
   >>> pprint(_decode_url('https://chromium.googlesource.com/apps/libapps'))
   {'compound_project': 'chromium/apps/libapps', 'domain': 'googlesource.com', 'project': 'apps/libapps', 'user': 'chromium'}
+  >>> pprint(_decode_url('https://git.nomology.id.au/preserve-modules'))
+  {'compound_project': 'preserve-modules', 'domain': 'nomology.id.au', 'project': 'preserve-modules', 'user': None}
+  >>> pprint(_decode_url('https://code.delx.net.au/webdl'))
+  {'compound_project': 'webdl', 'domain': 'delx.net.au', 'project': 'webdl', 'user': None}
   >>> pprint(_decode_url('http://localhost/abc.git'))
   Traceback (most recent call last):
     ...
@@ -64,7 +68,8 @@ def _decode_url(url):
       r'(?P<scheme>https?)://(?P<domain>gist\.github\.com)/(?P<project>[^.]+).git',
 
       # Generic case.
-      r'(?P<scheme>https?)://(?P<domain>[^./]+\.[^/]+)/(?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>(?:[a-zA-Z0-9_-]+/)?[a-zA-Z0-9_.-]+)\.git',
+      r'(?P<scheme>https?)://(?P<domain>(?:git|code)[.][^/]+\.[^/]+)/(?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>(?:[a-zA-Z0-9_-]+/)?[a-zA-Z0-9_.-]+?)(?:\.git)?$',
+      r'(?P<scheme>https?)://(?P<domain>[^/]+\.[^/]+)/(?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>(?:[a-zA-Z0-9_-]+/)?[a-zA-Z0-9_.-]+)\.git',
       r'(?P<scheme>git://)?(?:[a-zA-Z0-9_-]+@)?(?P<domain>[^.:]+\.[^:]+)[:/](?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>[a-zA-Z0-9_.-]+)\.git'
   ]
   DOMAIN_PREFIXES_TO_STRIP = {'git', 'code'}
