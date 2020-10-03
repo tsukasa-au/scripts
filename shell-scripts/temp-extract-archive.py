@@ -1,10 +1,15 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # vim:set nolist ts=2 sw=2 sts=2 et tw=0:
 
 from __future__ import print_function
 
 import collections
-import gflags
+try:
+  from absl import flags
+except ImportError:
+  import warnings
+  warnings.warn('Using the deprecated gflags module. Please install absl-py', DeprecationWarning)
+  import gflags as flags
 import itertools
 import logging
 import os
@@ -12,23 +17,23 @@ import subprocess
 import sys
 import tempfile
 
-gflags.DEFINE_string('decode_locale',
+flags.DEFINE_string('decode_locale',
     None,
     'The locale we should run the archive extraction program with. For example '
     'ja_JP.shift-jis.')
-gflags.DEFINE_string('decode_charset', None, '')
-gflags.DEFINE_bool('munge_slashes', False, '')
-gflags.DEFINE_string('override_extension', None, '')
-gflags.DEFINE_bool('use_7z_for_zip', True,
+flags.DEFINE_string('decode_charset', None, '')
+flags.DEFINE_bool('munge_slashes', False, '')
+flags.DEFINE_string('override_extension', None, '')
+flags.DEFINE_bool('use_7z_for_zip', True,
     'Should we use 7z or unzip to deal with zip archives?')
-gflags.DEFINE_string('tmp_dir_override', None, '')
-gflags.DEFINE_bool('extractor_output', False,
+flags.DEFINE_string('tmp_dir_override', None, '')
+flags.DEFINE_bool('extractor_output', False,
     'Should we dump the output from the binary to the screen?')
-gflags.DEFINE_bool('pretend_case_insensitive', True,
+flags.DEFINE_bool('pretend_case_insensitive', True,
     'Should we recursively walk the output of the archive and merge '
     'directories that only differ by case.')
 
-FLAGS = gflags.FLAGS
+FLAGS = flags.FLAGS
 
 
 class UnknownArchiveError(Exception):
@@ -293,22 +298,28 @@ def _get_tmpdir():
   return tempfile.mkdtemp(dir=base_dir)
 
 
-def _real_main():
+def _tmpdir_wrapper(argv):
+  tempdir = tempfile.mkdtemp(dir=FLAGS.tmp_dir_override)
+  try:
+    logging.info('Using temp: %s', tempdir)
+    return main(filenames=argv[1:], tempdir=tempdir)
+  finally:
+    # Perform cleanup
+    removedirs(tempdir)
+
+def _parse_gflags():
   try:
     argv = FLAGS(sys.argv)
   except gflags.FlagsError as e:
     print('%s\nUsage: %s ARGS\n%s' % (e, sys.argv[0], FLAGS))
     sys.exit(1)
-
-  tempdir = tempfile.mkdtemp(dir=FLAGS.tmp_dir_override)
-  try:
-    logging.info('Using temp: %s', tempdir)
-    main(filenames=argv[1:], tempdir=tempdir)
-  finally:
-    # Perform cleanup
-    removedirs(tempdir)
-
+  return _tmpdir_wrapper(argv)
 
 if __name__ == "__main__":
   logging.basicConfig(level=logging.INFO)
-  _real_main()
+  try:
+    from absl import app
+  except ImportError:
+    _parse_gflags()
+  else:
+    app.run(main=_tmpdir_wrapper)
