@@ -2,6 +2,7 @@
 # vim:set nolist et tw=0 ts=2 sw=2 sts=2:
 # Simple program that sorts git repos based on the site they come from.
 
+import optparse
 import os
 import re
 import subprocess
@@ -119,14 +120,23 @@ def _ensure_dir_exists(dirname):
         os.mkdir(partial_dirname)
 
 
-def main():
-  if len(sys.argv) != 2:
-    print('Must provide exactly 1 argument, the git repo to clone', file=sys.stderr)
-    sys.exit(1)
+def get_parser():
+  parser = optparse.OptionParser()
+  parser.add_option(
+      '--mirror',
+      action='store_true', dest='mirror', default=False,
+      help='Mirror all refs/branches from the remote to the local')
+  return parser
 
-  clone_url, = sys.argv[1:]
+def main():
+  opt_parser = get_parser()
+  options, args = opt_parser.parse_args()
+  if len(args) != 1:
+    opt_parser.error(f'Must provide exactly 1 argument, the git repo to clone. Got {len(args)}: {args!r}')
+  clone_url, = args
   url_parts = _decode_url(clone_url)
 
+  # Ensure that the directory up to the domain exists before we call git.
   base_dir = os.path.join(
       os.environ['HOME'], 'Projects', 'src')
   _ensure_dir_exists(base_dir)
@@ -135,11 +145,15 @@ def main():
 
   # Git will make sure that the final directory exists (in case
   # compound_project has a '/' in it).
-  cmd = [
-      'git', 'clone', '--',
-      clone_url,
-      url_parts['compound_project'],
-  ]
+  cmd = ['git', 'clone']
+
+  # Check if we need any additional flags to git.
+  if options.mirror:
+    cmd += ['--mirror']
+
+  # Now that we have (possibly) added our flags, specify the src repo and dest
+  # directory.
+  cmd += ['--', clone_url, url_parts['compound_project']]
   p = subprocess.Popen(cmd, cwd=src_base_dir)
   stdout, stderr = p.communicate()
   sys.exit(p.wait())
