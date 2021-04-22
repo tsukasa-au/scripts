@@ -54,7 +54,7 @@ class Extractor(object):
     ret = {}
     for ext in {'.cbr', '.rar', '.rar_'}:
       ret[ext] = self._extract_rar
-    for ext in {'.cbz', '.egg', '.jar', '.par', '.zip', '.apk'}:
+    for ext in {'.cbz', '.egg', '.jar', '.par', '.zip', '.apk', '.crx'}:
       if FLAGS.use_7z_for_zip:
         ret[ext] = self._extract_7z
       else:
