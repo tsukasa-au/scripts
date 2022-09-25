@@ -131,6 +131,10 @@ def get_parser():
       '--mirror',
       action='store_true', dest='mirror', default=False,
       help='Mirror all refs/branches from the remote to the local')
+  parser.add_option(
+      '--shallow',
+      action='store_true', dest='shallow', default=False,
+      help='Only fetch the latest commit (rather than all history)')
   return parser
 
 def main():
@@ -140,6 +144,10 @@ def main():
     opt_parser.error(f'Must provide exactly 1 argument, the git repo to clone. Got {len(args)}: {args!r}')
   clone_url, = args
   url_parts = _decode_url(clone_url)
+
+  if options.mirror and options.shallow:
+    print('Setting mirror and shallow does not make sense')
+    sys.exit(1)
 
   # Ensure that the directory up to the domain exists before we call git.
   base_dir = os.path.join(
@@ -155,6 +163,8 @@ def main():
   # Check if we need any additional flags to git.
   if options.mirror:
     cmd += ['--mirror']
+  if options.shallow:
+    cmd += ['--depth', '1']
 
   # Now that we have (possibly) added our flags, specify the src repo and dest
   # directory.
