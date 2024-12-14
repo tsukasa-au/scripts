@@ -53,6 +53,8 @@ def _decode_url(url):
   {'compound_project': 'webdl', 'domain': 'delx.net.au', 'project': 'webdl', 'user': None}
   >>> pprint(_decode_url('https://lore.kernel.org/linux-nfs/0'))
   {'compound_project': 'linux-nfs/0', 'domain': 'lore.kernel.org', 'project': '0', 'user': 'linux-nfs'}
+  >>> pprint(_decode_url('https://hg.nginx.org/nginx'))
+  {'compound_project': 'nginx', 'domain': 'nginx.org', 'project': 'nginx', 'user': None}
   >>> pprint(_decode_url('http://localhost/abc.git'))
   Traceback (most recent call last):
     ...
@@ -71,14 +73,14 @@ def _decode_url(url):
       r'(?P<scheme>https?)://(?P<domain>gist\.github\.com)/(?P<project>[^.]+).git',
 
       # Generic case.
-      r'(?P<scheme>https?)://(?P<domain>(?:git|code)[.][^/]+\.[^/]+)/(?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>(?:[a-zA-Z0-9_-]+/)?[a-zA-Z0-9_.-]+?)(?:\.git)?$',
+      r'(?P<scheme>https?)://(?P<domain>(?:git|code|hg)[.][^/]+\.[^/]+)/(?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>(?:[a-zA-Z0-9_-]+/)?[a-zA-Z0-9_.-]+?)(?:\.git)?$',
       r'(?P<scheme>https?)://(?P<domain>[^/]+\.[^/]+)/(?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>(?:[a-zA-Z0-9_-]+/)?[a-zA-Z0-9_.-]+)\.git',
       r'(?P<scheme>git://)?(?:[a-zA-Z0-9_-]+@)?(?P<domain>[^.:]+\.[^:]+)[:/](?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>[a-zA-Z0-9_.-]+)\.git',
 
       # Linux kernel
       r'(?P<scheme>https?)://(?P<domain>(?:.+[.])?kernel[.]org)/(?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>(?:[a-zA-Z0-9_-]+/)?[a-zA-Z0-9_.-]+?)(?:\.git)?$',
   ]
-  DOMAIN_PREFIXES_TO_STRIP = {'git', 'code'}
+  DOMAIN_PREFIXES_TO_STRIP = {'git', 'code', 'hg'}
   for regexp in RES:
     m = re.match(regexp, url)
     if not m:
@@ -135,6 +137,10 @@ def get_parser():
       '--shallow',
       action='store_true', dest='shallow', default=False,
       help='Only fetch the latest commit (rather than all history)')
+  parser.add_option(
+      '--mercurial',
+      action='store_true', dest='mercurial', default=False,
+      help='Fetch the repository using mercurial instead of git')
   return parser
 
 def main():
@@ -158,7 +164,10 @@ def main():
 
   # Git will make sure that the final directory exists (in case
   # compound_project has a '/' in it).
-  cmd = ['git', 'clone']
+  if not options.mercurial:
+    cmd = ['git', 'clone']
+  else:
+    cmd = ['hg', 'clone']
 
   # Check if we need any additional flags to git.
   if options.mirror:
