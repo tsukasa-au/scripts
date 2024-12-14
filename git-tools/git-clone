@@ -51,6 +51,8 @@ def _decode_url(url):
   {'compound_project': 'preserve-modules', 'domain': 'nomology.id.au', 'project': 'preserve-modules', 'user': None}
   >>> pprint(_decode_url('https://code.delx.net.au/webdl'))
   {'compound_project': 'webdl', 'domain': 'delx.net.au', 'project': 'webdl', 'user': None}
+  >>> pprint(_decode_url('https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git'))
+  {'compound_project': 'torvalds/linux', 'domain': 'kernel.org', 'project': 'linux', 'user': 'torvalds'}
   >>> pprint(_decode_url('https://lore.kernel.org/linux-nfs/0'))
   {'compound_project': 'linux-nfs/0', 'domain': 'lore.kernel.org', 'project': '0', 'user': 'linux-nfs'}
   >>> pprint(_decode_url('https://hg.nginx.org/nginx'))
@@ -78,7 +80,7 @@ def _decode_url(url):
       r'(?P<scheme>git://)?(?:[a-zA-Z0-9_-]+@)?(?P<domain>[^.:]+\.[^:]+)[:/](?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>[a-zA-Z0-9_.-]+)\.git',
 
       # Linux kernel
-      r'(?P<scheme>https?)://(?P<domain>(?:.+[.])?kernel[.]org)/(?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>(?:[a-zA-Z0-9_-]+/)?[a-zA-Z0-9_.-]+?)(?:\.git)?$',
+      r'(?P<scheme>https?)://(?P<domain>(?:.+[.])?kernel[.]org)/(?:pub/scm/linux/kernel/git/)?(?:(?P<user>[a-zA-Z0-9_-]+)/)?(?P<project>(?:[a-zA-Z0-9_-]+/)?[a-zA-Z0-9_.-]+?)(?:\.git)?$',
   ]
   DOMAIN_PREFIXES_TO_STRIP = {'git', 'code', 'hg'}
   for regexp in RES:
