@@ -54,14 +54,14 @@ class Extractor(object):
     ret = {}
     for ext in {'.cbr', '.rar', '.rar_'}:
       ret[ext] = self._extract_rar
-    for ext in {'.cbz', '.egg', '.jar', '.par', '.zip', '.apk', '.crx'}:
+    for ext in {'.cbz', '.egg', '.jar', '.par', '.zip', '.apk', '.xapk', '.crx'}:
       if FLAGS.use_7z_for_zip:
         ret[ext] = self._extract_7z
       else:
         ret[ext] = self._extract_zip
-    for ext in {'.7z', '.img', '.iso'}:
+    for ext in {'.7z', '.img', '.iso', '.dmg'}:
       ret[ext] = self._extract_7z
-    for ext in {'.bz2', '.gz2', '.tgz', '.tbz', '.tar', '.gz', '.xz'}:
+    for ext in {'.bz2', '.gz2', '.tgz', '.tbz', '.tar', '.gz', '.xz', '.zst'}:
       ret[ext] = self._extract_tar
     for ext in {'.deb', }:
       ret[ext] = self._extract_ar
@@ -138,7 +138,7 @@ class Extractor(object):
   
   def _extract_7z(self, filename):
     password = self._get_password(filename)
-    cmdline = ['7z', 'x']
+    cmdline = ['7z', 'x', '-y']
     if password is not None:
       cmdline.append('-p{}'.format(password))
     cmdline += ['--', filename]
