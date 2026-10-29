@@ -4,6 +4,7 @@
 
 import optparse
 import os
+import pathlib
 import re
 import subprocess
 import sys
@@ -114,21 +115,6 @@ def _decode_url(url):
   raise KeyError('Unknown host')
 
 
-def _ensure_dir_exists(dirname):
-  def _walk_path(dirname):
-    parts = dirname.split('/')
-    parts.reverse()
-    output_parts = [parts.pop()]
-    while parts:
-      output_parts.append(parts.pop())
-      yield '/'.join(output_parts)
-
-  if not os.path.exists(dirname):
-    for partial_dirname in _walk_path(dirname):
-      if not os.path.exists(partial_dirname):
-        os.mkdir(partial_dirname)
-
-
 def get_parser():
   parser = optparse.OptionParser()
   parser.add_option(
@@ -145,6 +131,7 @@ def get_parser():
       help='Fetch the repository using mercurial instead of git')
   return parser
 
+
 def main():
   opt_parser = get_parser()
   options, args = opt_parser.parse_args()
@@ -157,15 +144,6 @@ def main():
     print('Setting mirror and shallow does not make sense')
     sys.exit(1)
 
-  # Ensure that the directory up to the domain exists before we call git.
-  base_dir = os.path.join(
-      os.environ['HOME'], 'Projects', 'src')
-  _ensure_dir_exists(base_dir)
-  src_base_dir = os.path.join(base_dir, url_parts['domain'])
-  _ensure_dir_exists(src_base_dir)
-
-  # Git will make sure that the final directory exists (in case
-  # compound_project has a '/' in it).
   if not options.mercurial:
     cmd = ['git', 'clone']
   else:
@@ -177,10 +155,18 @@ def main():
   if options.shallow:
     cmd += ['--depth', '1']
 
+
+  repo_dir = pathlib.Path(pathlib.Path.home(), 'Projects/src', url_parts['domain'], url_parts['compound_project'])
+  # Git will make sure that the final directory exists (in case
+  # compound_project has a '/' in it).
+  repo_dir.parent.mkdir(parents=True, exist_ok=True)
+
   # Now that we have (possibly) added our flags, specify the src repo and dest
   # directory.
-  cmd += ['--', clone_url, url_parts['compound_project']]
-  p = subprocess.Popen(cmd, cwd=src_base_dir)
+  cmd += ['--', clone_url, repo_dir]
+
+  # Ensure that the directory up to the domain exists before we call git.
+  p = subprocess.Popen(cmd, cwd=repo_dir.parent)
   stdout, stderr = p.communicate()
   sys.exit(p.wait())
 
